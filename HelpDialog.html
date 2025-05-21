@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; color: #333; }
+      h2 { color: #4285F4; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+      h3 { color: #2058a8; margin-top: 20px; }
+      code { background-color: #f0f0f0; padding: 2px 5px; border-radius: 3px; font-family: monospace; }
+      .highlight { color: #DB4437; font-weight: bold; }
+      ul { margin-top: 5px; padding-left: 20px; }
+      li { margin-bottom: 8px; }
+      .note { background-color: #fff8e1; border-left: 4px solid #ffc107; padding: 10px; margin-top:15px; border-radius:3px;}
+      .button-container { text-align: center; margin-top: 25px; }
+      button {
+        background-color: #4CAF50; color: white; padding: 10px 20px;
+        border: none; border-radius: 4px; cursor: pointer; font-size: 1em;
+      }
+      button:hover { background-color: #45a049; }
+    </style>
+  </head>
+  <body>
+    <!-- Cambio aquí: Título interno de la sección de ayuda -->
+    <h2><span style="font-size:1.2em; vertical-align:middle;">🛠️</span> Ayuda: GEMINI_MHW</h2>
+
+    <p>Esta herramienta te permite enviar múltiples solicitudes a Gemini AI desde tu Google Sheet y obtener los resultados directamente en las celdas, ¡todo con una <span class="highlight">única llamada optimizada</span> a la API!</p>
+
+    <h3>1. Configuración Inicial (Solo una vez)</h3>
+    <ul>
+      <!-- Cambio aquí: Ruta del menú principal -->
+      <li>Ve al menú <code style="color: #2058a8;">✨ GEMINI_MHW ✨ > 1. Configurar API Key</code>.</li>
+      <li>Esto creará (si no existe) una hoja llamada <code class="highlight">"config"</code>.</li>
+      <li>En la hoja "config", ingresa tu API Key de Gemini en la celda <code class="highlight">A1</code> y presiona Enter. Puedes obtener tu API Key desde <a href="https://makersuite.google.com/app/apikey" target="_blank">Google AI Studio</a>.</li>
+    </ul>
+
+    <h3>2. Preparando tus Solicitudes (Prompts)</h3>
+    <ul>
+      <li>En cualquier celda de tu hoja de trabajo, escribe la fórmula especial:</li>
+      <li><code>=GEMINI_MHW("Tu instrucción para Gemini", B2)</code></li>
+      <li>O también: <code>=GEMINI_MHW("Tu instrucción", "Texto de apoyo directo")</code></li>
+      <li><strong>Primer argumento (obligatorio):</strong> Tu prompt principal para Gemini, <span class="highlight">siempre entre comillas dobles</span>. Ejemplo: <code>"Resume el siguiente texto:"</code>.</li>
+      <li><strong>Segundo argumento (opcional):</strong>
+        <ul>
+            <li>Una <span class="highlight">referencia a otra celda</span> que contiene información adicional (ej. <code>B2</code>, <code>HojaOtra!C5</code>).</li>
+            <li>O, <span class="highlight">texto de apoyo directo</span>, también entre comillas dobles (ej. <code>"Considera un tono formal."</code>).</li>
+        </ul>
+      </li>
+       <li>Puedes usar punto y coma (<code>;</code>) o coma (<code>,</code>) para separar los argumentos.</li>
+       <li>Para incluir comillas dobles dentro de tu texto, duplícalas: <code>"Dile a Gemini que diga ""Hola Mundo""."</code></li>
+    </ul>
+    <p><em>Nota: Al escribir la fórmula, la celda podría mostrar <code>#ERROR!</code> o el texto de la fórmula. Esto es normal.</em></p>
+
+    <h3>3. Procesando el Lote</h3>
+    <ul>
+      <li>Una vez que hayas preparado todas tus fórmulas <code>=GEMINI_MHW(...)</code> en la hoja activa...</li>
+      <!-- Cambio aquí: Ruta del menú principal y nombre del ítem del menú -->
+      <li>Ve al menú <code style="color: #2058a8;">✨ GEMINI_MHW ✨ > Procesar Lote con =GEMINI_MHW(...)</code>.</li>
+      <li>La herramienta recopilará todas tus solicitudes, las enviará a Gemini en <span class="highlight">una sola llamada eficiente</span>, y luego escribirá las respuestas en las celdas correspondientes, reemplazando las fórmulas.</li>
+    </ul>
+
+    <h3>Información Adicional</h3>
+    <ul>
+      <li><strong>Modelo de IA Utilizado:</strong> Esta herramienta utiliza el modelo <code class="highlight">gemini-2.0-flash</code> de Google (o el especificado en la constante <code>MODEL_NAME</code> del script).</li>
+      <li><strong>Límites:</strong> Ten en cuenta los límites de tokens de Gemini. Si envías demasiadas tareas o tareas muy largas en un solo lote, podrías alcanzar estos límites. La herramienta mostrará una advertencia si el prompt total parece muy extenso.</li>
+      <li><strong>Errores:</strong> Si Gemini no puede procesar una tarea o hay un problema con el formato de la respuesta, la celda podría mostrar un mensaje de error (ej. <code>#ERROR</code>, <code>#REF!</code>) o un mensaje específico de la API. Revisa los <span class="highlight">Logs de Apps Script</span> (desde el editor: Ejecuciones) para más detalles si encuentras problemas.</li>
+    </ul>
+
+    <div class="note">
+      <strong>¡Importante!</strong> El éxito del procesamiento en lote único depende de que Gemini siga estrictamente las instrucciones de formato. Si notas inconsistencias, podría ser necesario ajustar el "mega-prompt" dentro del código del script (función <code>processSingleUnifiedBatchRequest</code>).
+    </div>
+
+    <div class="button-container">
+      <button onclick="google.script.host.close()">Cerrar Ayuda</button>
+    </div>
+  </body>
+</html>
