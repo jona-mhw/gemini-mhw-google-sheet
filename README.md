@@ -1,9 +1,9 @@
-# GEMINI_MHW - Gemini as a Formula in Google Sheets (MVP)
+# GEMINI_MHW - Gemini como Fórmula en Google Sheets (MVP)
 
 **Mira la demo en YouTube:**
 [▶️ Demo de GEMINI_MHW en YouTube](https://www.youtube.com/watch?v=UdV_kD3hUWU)
 
-**GEMINI_MHW** es un script de Google Apps Script (actualmente un **MVP - Producto Mínimo Viable**) que te permite usar la potencia de Gemini AI como si fuera una fórmula nativa dentro de tus Google Sheets. Optimiza el proceso al enviar todas las solicitudes de una hoja en **una única inferencia** a la API de Gemini.
+**GEMINI_MHW** es un script de Google Apps Script (MVP) que te permite usar la potencia de Gemini AI como si fuera una fórmula nativa dentro de tus Google Sheets, similar a la funcionalidad `=AI()` que Google ha anunciado pero que aún podría no estar disponible para todos los usuarios (a fecha de 21 de mayo de 2024). Este script optimiza el proceso al enviar todas las solicitudes de una hoja en **una única inferencia** a la API de Gemini.
 
 Este proyecto está orientado a usuarios que desean realizar múltiples inferencias de Gemini sobre datos en sus hojas de cálculo de manera sencilla y eficiente.
 
