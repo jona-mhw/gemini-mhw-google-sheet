@@ -2,10 +2,8 @@
  * @OnlyCurrentDoc
  */
 
-// --- Cambios aquí ---
 const PLACEHOLDER_FUNCTION_NAME = "GEMINI_MHW"; // Nombre interno de la función que se busca en las celdas
 const MODEL_NAME = "gemini-2.0-flash"; // Modelo de Gemini a utilizar. ¡Asegúrate que tu API Key tenga acceso!
-// --------------------
 
 // --- Delimitadores para el procesamiento en lote único UNIFICADO ---
 const UNIFIED_JOB_ID_PREFIX = "TASK_ID_"; // Prefijo para identificar cada sub-tarea
@@ -16,15 +14,12 @@ const UNIFIED_RESPONSE_SEPARATOR = "~~~~~GEMINI_TASK_SEPARATOR~~~~~"; // Lo que 
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('✨ =GEMINI_MHW("prompt"; [info]) ✨') // Título del menú principal (más corto y amigable)
+  ui.createMenu('✨ GEMINI_MHW ✨') // Título del menú principal
       .addItem('1. Configurar API Key', 'showApiKeyConfigInstructions')
       .addSeparator()
-      // --- Cambio aquí ---
       .addItem('Procesar Lote con =' + PLACEHOLDER_FUNCTION_NAME + '(...)', 'processSingleUnifiedBatchRequest')
       .addSeparator()
-      // Título del ítem de ayuda modificado para ser más directo (Cambio aquí):
-      .addItem('Ayuda en el uso de ' + PLACEHOLDER_FUNCTION_NAME + '', 'showHelpDialog')
-      // --------------------
+      .addItem('Ayuda en el uso de ' + PLACEHOLDER_FUNCTION_NAME, 'showHelpDialog') // Ajustado para que quepa mejor
       .addToUi();
 }
 
@@ -95,7 +90,7 @@ function getApiKeyFromConfig() {
 /**
  * Realiza la llamada única a la API de Gemini con el prompt unificado.
  * @param {string} apiKey La API Key de Gemini.
- * @param {string} fullPrompt El prompt completo y estructurado a enviar.
+ *   El prompt completo y estructurado a enviar.
  * @return {string} La respuesta de Gemini o un mensaje de error que comienza con "Error:".
  */
 function _callUnifiedGeminiApi(apiKey, fullPrompt) {
@@ -108,11 +103,14 @@ function _callUnifiedGeminiApi(apiKey, fullPrompt) {
     return "Error: El prompt unificado no puede estar vacío.";
   }
 
-  // --- Cambio aquí (Usa la constante MODEL_NAME) ---
   var apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${apiKey}`;
-  // --------------------
   var payload = {
     "contents": [{"parts": [{"text": fullPrompt}]}],
+    // Opcional: Podrías añadir aquí generationConfig si quieres controlar más la salida
+    // "generationConfig": {
+    //   "temperature": 0.7,
+    //   "maxOutputTokens": 8192, // Ajustar según necesidad y modelo
+    // }
   };
 
   var options = {
@@ -143,13 +141,13 @@ function _callUnifiedGeminiApi(apiKey, fullPrompt) {
       Logger.log("Error: Estructura de respuesta inesperada de Gemini. Body: " + responseBody);
       return "Error: Respuesta inesperada de Gemini (formato interno). Consulta los Logs.";
     } else {
-      let apiErrorMsg = responseBody;
+      let apiErrorMsg = `Código de respuesta: ${responseCode}. Cuerpo: ${responseBody}`;
       try {
           let errorJson = JSON.parse(responseBody);
           if (errorJson.error && errorJson.error.message) {
               apiErrorMsg = errorJson.error.message;
           }
-      } catch(e) { /* no hacer nada si no es JSON */ }
+      } catch(e) { /* no hacer nada si no es JSON, usar el mensaje completo */ }
       Logger.log(`Error de API (${responseCode}): ${apiErrorMsg}`);
       return `Error de API de Gemini (${responseCode}): ${apiErrorMsg}`;
     }
@@ -202,9 +200,7 @@ function _parseFormulaArguments(argsString, sheet, currentCellA1ForLog) {
       error = `#ERROR: El primer argumento (prompt) debe ser un texto entre comillas. Ej: "Analiza esto"`;
     }
   } else {
-    // --- Cambio aquí (Usa la constante del nombre de la función) ---
     error = `#ERROR: Falta el prompt. Uso: =${PLACEHOLDER_FUNCTION_NAME}("tu prompt", [info_adicional])`;
-    // --------------------
   }
 
   if (!error && argsArray.length > 1 && argsArray[1]) {
@@ -214,7 +210,7 @@ function _parseFormulaArguments(argsString, sheet, currentCellA1ForLog) {
     } else {
       try {
         let referencedCell = sheet.getRange(secondArg);
-        info_complementaria = referencedCell.getDisplayValue();
+        info_complementaria = referencedCell.getDisplayValue(); // Usar getDisplayValue para obtener el valor como se muestra
       } catch (e) {
         error = `#REF! Error al leer la celda '${secondArg}' para información complementaria.`;
         Logger.log(`Error de referencia de celda en ${currentCellA1ForLog}: ${secondArg} - ${e.message}`);
@@ -238,21 +234,20 @@ function processSingleUnifiedBatchRequest() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getActiveSheet();
   var dataRange = sheet.getDataRange();
-  var formulas = dataRange.getFormulas();
+  var formulas = dataRange.getFormulas(); // Volver a A1 si el parser de argumentos espera eso
 
   Logger.log(`INICIO: Proceso de Lote con INFERENCIA ÚNICA en hoja: ${sheet.getName()}`);
   var apiKey = getApiKeyFromConfig();
   if (apiKey.startsWith("Error:")) {
     Logger.log("Proceso detenido por error de API Key.");
+    // No es necesario un ui.alert aquí, getApiKeyFromConfig ya lo hace.
     return;
   }
 
   var tasks = [];
   const startRowData = dataRange.getRow();
   const startColData = dataRange.getColumn();
-  // --- Cambio aquí (Usa la constante del nombre de la función) ---
   const formulaRegex = new RegExp(`^=${PLACEHOLDER_FUNCTION_NAME}\\s*\\((.*)\\)\\s*$`, "i");
-  // --------------------
 
   for (let r = 0; r < formulas.length; r++) {
     for (let c = 0; c < formulas[r].length; c++) {
@@ -279,21 +274,24 @@ function processSingleUnifiedBatchRequest() {
           col: currentColInSheet,
           cellA1: cellA1
         });
-        sheet.getRange(currentRowInSheet, currentColInSheet).setValue("⏳ Preparando lote...");
+        // No mostrar "Preparando lote..." individualmente aquí para una UI más limpia,
+        // se mostrará un toast general.
       }
     }
   }
-  SpreadsheetApp.flush();
 
   if (tasks.length === 0) {
-    // --- Cambio aquí (Usa la constante del nombre de la función) ---
     ui.alert("Información", "No se encontraron fórmulas válidas como '=" + PLACEHOLDER_FUNCTION_NAME + "(...)' para procesar en la hoja activa.", ui.ButtonSet.OK);
-    // --------------------
     Logger.log("FIN: No hay tasks para procesar en lote único.");
     return;
   }
+
+  // Actualizar celdas a "Procesando..." antes de la llamada larga
+  tasks.forEach(task => sheet.getRange(task.row, task.col).setValue("⏳ Procesando..."));
+  SpreadsheetApp.flush(); // Forzar la actualización de la UI
+
   Logger.log(`Recopiladas ${tasks.length} tasks para el lote único.`);
-  ss.toast(`Enviando ${tasks.length} tareas en un solo lote a Gemini...`, "Procesando Lote Optimizado", -1);
+  ss.toast(`Enviando ${tasks.length} tareas en un solo lote a Gemini...`, `Procesando Lote con ${MODEL_NAME}`, -1); // -1 para que dure hasta que se quite
 
   let megaPromptParts = [
     "Eres un asistente avanzado de procesamiento por lotes. Te proporcionaré una lista de tareas individuales, cada una con un identificador único (taskId).",
@@ -319,19 +317,27 @@ function processSingleUnifiedBatchRequest() {
 
   Logger.log(`Mega-Prompt construido (Longitud total: ${megaPrompt.length}). Primeros 500 caracteres: ${megaPrompt.substring(0,500)}`);
 
-  // --- Cambio aquí (Usa la constante del nombre del modelo) ---
-  if (megaPrompt.length > 28000 && MODEL_NAME.includes("flash")) {
-      Logger.log(`ADVERTENCIA: El Mega-Prompt (aprox. ${megaPrompt.length} caracteres) es muy largo y podría exceder los límites de tokens de ${MODEL_NAME}.`);
-      ui.alert("Advertencia de Límite de Tokens", `El conjunto de ${tasks.length} tareas es muy grande (${megaPrompt.length} caracteres aprox.) y podría exceder los límites de ${MODEL_NAME}. Si la operación falla o da resultados incompletos, intente con menos tareas o divida el trabajo.`, ui.ButtonSet.OK);
+  // --- AJUSTE EN LA ADVERTENCIA DE LÍMITE DE TOKENS ---
+  const FLASH_MODEL_CHAR_WARNING_THRESHOLD = 700000; // ~700k caracteres, mucho más alto
+  const OTHER_MODEL_CHAR_WARNING_THRESHOLD = 28000;  // Mantenemos el umbral bajo para otros modelos
+
+  let charWarningThreshold = OTHER_MODEL_CHAR_WARNING_THRESHOLD;
+  if (MODEL_NAME.toLowerCase().includes("flash")) {
+      charWarningThreshold = FLASH_MODEL_CHAR_WARNING_THRESHOLD;
   }
-  // --------------------
+
+  if (megaPrompt.length > charWarningThreshold) {
+      Logger.log(`ADVERTENCIA: El Mega-Prompt (aprox. ${megaPrompt.length} caracteres) es muy largo y podría aproximarse a los límites de tokens de ${MODEL_NAME}. Umbral de advertencia: ${charWarningThreshold} caracteres.`);
+      ui.alert("Advertencia de Límite de Tokens", `El conjunto de ${tasks.length} tareas es muy grande (${megaPrompt.length} caracteres aprox.) y podría aproximarse a los límites de ${MODEL_NAME}. Si la operación falla o da resultados incompletos, intente con menos tareas o divida el trabajo.`, ui.ButtonSet.OK);
+  }
+  // --- FIN DEL AJUSTE ---
 
   let unifiedResponseText = _callUnifiedGeminiApi(apiKey, megaPrompt);
 
   if (unifiedResponseText.startsWith("Error:")) {
     Logger.log(`Error crítico en la llamada del Mega-Prompt: ${unifiedResponseText}`);
     ui.alert("Error en Procesamiento de Lote Único", `La llamada a Gemini para el lote falló: ${unifiedResponseText}. Las celdas no fueron actualizadas. Por favor, revise los Logs de Apps Script para más detalles.`, ui.ButtonSet.OK);
-    tasks.forEach(task => sheet.getRange(task.row, task.col).setValue("❌ Error API Lote"));
+    tasks.forEach(task => sheet.getRange(task.row, task.col).setValue(`❌ Error API Lote: ${unifiedResponseText.substring(0, 100)}...`)); // Mostrar parte del error
     ss.toast("Error en API del Lote", "Fallo el procesamiento", 7);
     return;
   }
@@ -348,7 +354,7 @@ function processSingleUnifiedBatchRequest() {
     segment = segment.trim();
     if (!segment) return;
 
-    let match = segment.match(new RegExp(`^(${UNIFIED_JOB_ID_PREFIX}[^:]+)::(.*)$`, "s"));
+    let match = segment.match(new RegExp(`^(${UNIFIED_JOB_ID_PREFIX}[^:]+)::(.*)$`, "s")); // 's' flag para que . coincida con saltos de línea
 
     if (match && match[1] && typeof match[2] !== 'undefined') {
       let responseTaskId = match[1].trim();
@@ -358,7 +364,7 @@ function processSingleUnifiedBatchRequest() {
 
       if (task) {
         sheet.getRange(task.row, task.col).setValue(taskResultText);
-        Logger.log(`OK: Celda ${task.cellA1} (TaskId: ${responseTaskId}) actualizada con: "${String(taskResultText).substring(0, 70)}..."`);
+        Logger.log(`OK: Celda ${task.cellA1} (TaskId: ${responseTaskId}) actualizada.`); // No mostrar el contenido para logs más limpios
         updatedCount++;
         tasksMap.delete(responseTaskId);
       } else {
@@ -377,7 +383,7 @@ function processSingleUnifiedBatchRequest() {
       Logger.log(`ERROR: ${tasksMap.size} tareas enviadas no tuvieron una respuesta mapeada desde Gemini:`);
       tasksMap.forEach(task => {
           Logger.log(`  - TaskId: ${task.taskId} (Celda: ${task.cellA1})`);
-          sheet.getRange(task.row, task.col).setValue("#ERROR: Sin respuesta en lote de Gemini");
+          sheet.getRange(task.row, task.col).setValue("#ERROR: Sin respuesta de Gemini en el lote");
           errorsInResponseParsing.push(`Tarea no resuelta: ${task.cellA1} (ID: ${task.taskId})`);
       });
   }
@@ -388,7 +394,10 @@ function processSingleUnifiedBatchRequest() {
 
   let finalMessage = `Proceso de Lote Optimizado Completado.\nSe enviaron ${tasks.length} tareas a Gemini en una sola llamada.\nSe actualizaron ${updatedCount} celdas.`;
   if (tasks.length !== updatedCount || errorsInResponseParsing.length > 0) {
-    finalMessage += `\n${tasks.length - updatedCount + errorsInResponseParsing.length} ${tasks.length - updatedCount + errorsInResponseParsing.length === 1 ? 'incidencia encontrada' : 'incidencias encontradas'} (respuestas no mapeadas o errores de formato). Revisa los Logs de Apps Script para más detalles.`;
+    let numIncidents = (tasks.length - updatedCount) + errorsInResponseParsing.filter(e => !e.startsWith("ADVERTENCIA")).length; // Contar errores reales, no solo advertencias
+    if (numIncidents > 0) {
+      finalMessage += `\n${numIncidents} ${numIncidents === 1 ? 'incidencia encontrada' : 'incidencias encontradas'} (respuestas no mapeadas o errores de formato). Revisa los Logs de Apps Script y las celdas marcadas con #ERROR para más detalles.`;
+    }
   }
   ui.alert("Resultado del Lote Optimizado", finalMessage, ui.ButtonSet.OK);
   ss.toast(`¡Lote Optimizado Terminado! ${updatedCount}/${tasks.length} celdas actualizadas.`, "Éxito del Procesamiento", 10);
@@ -403,7 +412,5 @@ function showHelpDialog() {
   var htmlOutput = HtmlService.createHtmlOutputFromFile('HelpDialog')
       .setWidth(550)
       .setHeight(450);
-  // --- Cambio aquí (Título del diálogo) ---
-  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Ayuda / Cómo Usar ✨ GeminiSheetsMHW ✨');
-  // --------------------
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Ayuda / Cómo Usar ✨ GEMINI_MHW ✨');
 }
