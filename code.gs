@@ -14,7 +14,7 @@ const UNIFIED_RESPONSE_SEPARATOR = "~~~~~GEMINI_TASK_SEPARATOR~~~~~"; // Lo que 
  */
 function onOpen() {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu('✨ GEMINI_MHW ✨') // Título del menú principal
+  ui.createMenu('GEMINI_MHW') // Título del menú principal
       .addItem('1. Configurar API Key', 'showApiKeyConfigInstructions')
       .addSeparator()
       .addItem('Procesar Lote con =' + PLACEHOLDER_FUNCTION_NAME + '(...)', 'processSingleUnifiedBatchRequest')
